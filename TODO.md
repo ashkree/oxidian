@@ -81,11 +81,11 @@ oxidian/
 Everything needed for a working end-to-end system. No Rust yet.
 
 ### 1.1 Project setup
-- [ ] Create repo and initialise git
+- [x] Create repo and initialise git
 - [ ] Set up `pyproject.toml` with all dependencies
 - [ ] Create `config.example.toml` with all settings documented
 - [ ] Set up `core/` package structure with `__init__.py` files
-- [ ] Create `.gitignore` (venv, `*.db`, `config.toml`, `__pycache__`)
+- [x] Create `.gitignore` (venv, `*.db`, `config.toml`, `__pycache__`)
 - [ ] Create `.env.example` documenting required environment variables
 
 ### 1.2 Config
