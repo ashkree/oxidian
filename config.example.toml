@@ -1,2 +1,5 @@
 [vault]
 path = "./sample"
+
+[parser]
+frontmatter_blacklist = []

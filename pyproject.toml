@@ -5,6 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "oxidian"
 version = "0.1.0"
+dependencies = ["python-frontmatter"]
 
 [tool.setuptools.packages.find]
 where = ["."]
+
+[tool.basedpyright]
+reportMissingTypeStubs = false
+reportAssignmentType = false
+reportExplicitAny = false
+reportAny = false
