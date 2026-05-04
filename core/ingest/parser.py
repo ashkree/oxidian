@@ -1,10 +1,8 @@
 import re
-from pathlib import Path
 from typing import Any
 
 import frontmatter
 
-from core.config import load_config
 from core.models import Heading, ParsedNote, VaultFile
 
 # ---------------------------------------------------------------------------
@@ -12,14 +10,14 @@ from core.models import Heading, ParsedNote, VaultFile
 # ---------------------------------------------------------------------------
 
 
-def parseNote(note: VaultFile, config: dict[str, Any]) -> ParsedNote:
+def parse_note(note: VaultFile, config: dict[str, Any]) -> ParsedNote:
     post = frontmatter.load(str(note.path))
 
-    tags = _extractTags(post.metadata)
-    note_type = _extractNoteType(tags)
-    wikilinks = _extractWikilinks(post.content)
-    content = cleanContent(post.content)
-    headings = _extractHeadings(content)
+    tags = extract_tags(post.metadata)
+    note_type = extract_note_type(tags)
+    wikilinks = extract_wikilinks(post.content)
+    content = clean_content(post.content)
+    headings = extract_headings(content)
 
     frontmatter_blacklist = config.get("parser", {}).get("frontmatter_blacklist", [])
 
@@ -29,7 +27,7 @@ def parseNote(note: VaultFile, config: dict[str, Any]) -> ParsedNote:
         tags=tags,
         wikilinks=wikilinks,
         content=content,
-        frontmatter=extractFrontmatter(post.metadata, frontmatter_blacklist),
+        frontmatter=extract_frontmatter(post.metadata, frontmatter_blacklist),
         source_path=note.path,
         headings=headings,
     )
@@ -40,7 +38,7 @@ def parseNote(note: VaultFile, config: dict[str, Any]) -> ParsedNote:
 # ---------------------------------------------------------------------------
 
 
-def extractFrontmatter(
+def extract_frontmatter(
     metadata: dict[str, Any], blacklist: list[str]
 ) -> dict[str, Any]:
     """Filter frontmatter metadata, removing any keys in the blacklist.
@@ -50,18 +48,18 @@ def extractFrontmatter(
     return {k: v for k, v in metadata.items() if k not in blacklist}
 
 
-def _extractTags(metadata: dict[str, Any]) -> set[str]:
+def extract_tags(metadata: dict[str, Any]) -> set[str]:
     """Pull tags from frontmatter. Normalizes to a flat set of strings."""
     raw: list[str] = metadata.get("tags") or []
     return {tag.strip().lstrip("#") for tag in raw if tag}
 
 
-def _extractNoteType(tags: set[str]) -> str | None:
+def extract_note_type(tags: set[str]) -> str | None:
     """Derive note type from tags ending in '_note' (e.g. 'literature_note')."""
     return next((tag for tag in tags if tag.endswith("_note")), None)
 
 
-def _extractWikilinks(raw_content: str) -> set[str]:
+def extract_wikilinks(raw_content: str) -> set[str]:
     """
     Extract all wikilink targets from raw markdown before cleaning.
 
@@ -76,7 +74,7 @@ def _extractWikilinks(raw_content: str) -> set[str]:
     return {link.strip() for link in aliased + plain}
 
 
-def _extractHeadings(cleaned_content: str) -> list[Heading]:
+def extract_headings(cleaned_content: str) -> list[Heading]:
     """
     Extract headings (H1-H6) from cleaned content with their char positions.
 
@@ -101,21 +99,21 @@ def _extractHeadings(cleaned_content: str) -> list[Heading]:
 # ---------------------------------------------------------------------------
 
 
-def cleanContent(content: str) -> str:
-    content = _stripDataviewBlocks(content)
-    content = _transformWikilinks(content)
-    content = _transformCallouts(content)
-    content = _stripMarkdownSyntax(content)
-    content = _normalizeWhitespace(content)
+def clean_content(content: str) -> str:
+    content = strip_dataview_blocks(content)
+    content = transform_wikilinks(content)
+    content = transform_callouts(content)
+    content = strip_markdown_syntax(content)
+    content = normalize_whitespace(content)
     return content
 
 
-def _stripDataviewBlocks(content: str) -> str:
+def strip_dataview_blocks(content: str) -> str:
     """Remove ```dataview ... ``` code blocks."""
     return re.sub(r"```dataview\b.*?```", "", content, flags=re.DOTALL | re.IGNORECASE)
 
 
-def _transformWikilinks(content: str) -> str:
+def transform_wikilinks(content: str) -> str:
     """
     ![[image.png]]      → (removed)
     [[Note|Alias]]      → Alias
@@ -127,7 +125,7 @@ def _transformWikilinks(content: str) -> str:
     return content
 
 
-def _transformCallouts(content: str) -> str:
+def transform_callouts(content: str) -> str:
     """
     Convert Obsidian callouts to plain prefixed text.
 
@@ -149,14 +147,16 @@ def _transformCallouts(content: str) -> str:
     )
 
 
-def _stripMarkdownSyntax(content: str) -> str:
+def strip_markdown_syntax(content: str) -> str:
     """Strip remaining markdown syntax, preserving underlying text."""
     # Bold / italic / strikethrough
     content = re.sub(r"\*{1,3}(.+?)\*{1,3}", r"\1", content)
     content = re.sub(r"_{1,3}(.+?)_{1,3}", r"\1", content)
     content = re.sub(r"~~(.+?)~~", r"\1", content)
+
     # Inline code
     content = re.sub(r"`(.+?)`", r"\1", content)
+
     # Markdown links → label only
     content = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", content)
     # Bare URLs
@@ -175,7 +175,7 @@ def _stripMarkdownSyntax(content: str) -> str:
     return content
 
 
-def _normalizeWhitespace(content: str) -> str:
+def normalize_whitespace(content: str) -> str:
     """
     - Normalize line endings to \\n
     - Strip trailing whitespace per line
@@ -187,25 +187,3 @@ def _normalizeWhitespace(content: str) -> str:
     content = "\n".join(lines)
     content = re.sub(r"\n{3,}", "\n\n", content)
     return content.strip()
-
-
-# ---------------------------------------------------------------------------
-# Dev entrypoint
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    path = Path(
-        "~/Documents/obsidian/knowledge/01 Notes/Lecture 2 - Client Server Architecture and the World Wide Web.md"
-    ).expanduser()
-    vault_file = VaultFile(
-        path=path,
-        mtime=path.stat().st_mtime,
-    )
-
-    import pprint
-
-    note = parseNote(
-        vault_file, load_config("~/Documents/projects/oxidian/config.example.toml")
-    )
-
-    pprint.pprint(note)
