@@ -1,0 +1,15 @@
+[vault]
+path = "./sample"
+
+[parser]
+frontmatter_blacklist = ["secret"]
+
+[embedding]
+provider = "ollama"
+model = "embeddinggemma"
+batch_size = "this is the wrong type"
+
+[database]
+db_path = "oxidian.db"
+embedding_size = 768
+

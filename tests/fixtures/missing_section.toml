@@ -1,0 +1,12 @@
+[vault]
+path = "./sample"
+
+[parser]
+frontmatter_blacklist = ["secret"]
+
+[embedding]
+provider = "ollama"
+model = "embeddinggemma"
+batch_size = 5
+
+

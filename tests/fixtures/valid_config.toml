@@ -1,0 +1,15 @@
+[vault]
+path = "/some/path"
+directory_blacklist = []
+
+[parse]
+frontmatter_blacklist = ["secret"]
+
+[embed]
+provider = "ollama"
+model = "embeddinggemma"
+batch_size = 32
+
+[db]
+db_path = "oxidian.db"
+embedding_size = 1536
