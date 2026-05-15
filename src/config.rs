@@ -5,17 +5,17 @@ use std::io::ErrorKind;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
-struct Config {
-    vault: VaultConfig,
-    parse: ParserConfig,
-    embed: EmbeddingConfig,
-    db: DatabaseConfig,
+pub struct Config {
+    pub vault: VaultConfig,
+    pub parse: ParserConfig,
+    pub embed: EmbeddingConfig,
+    pub db: DatabaseConfig,
 }
 
 #[derive(Deserialize, Debug)]
-struct VaultConfig {
-    path: String,
-    directory_blacklist: Vec<String>,
+pub struct VaultConfig {
+    pub path: String,
+    pub directory_blacklist: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -37,7 +37,7 @@ struct DatabaseConfig {
 }
 
 impl Config {
-    fn load_config(config_file: impl AsRef<std::path::Path>) -> Config {
+    pub fn load_config(config_file: impl AsRef<std::path::Path>) -> Config {
         let config_contents =
             fs::read_to_string(config_file).unwrap_or_else(|error| match error.kind() {
                 ErrorKind::NotFound => panic!("File not found: {error}"),
@@ -62,7 +62,7 @@ mod tests {
     #[test]
     fn test_valid_config_loads() {
         let config = Config::load_config(fixture("valid_config.toml"));
-        assert_eq!(config.vault.path, "/some/path");
+        assert_eq!(config.vault.path, "tests/fixtures/sample_vault");
         assert_eq!(config.embed.batch_size, 32);
         assert_eq!(config.db.embedding_size, 1536);
     }

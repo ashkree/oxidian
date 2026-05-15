@@ -1,5 +1,5 @@
 [vault]
-path = "/some/path"
+path = "tests/fixtures/sample_vault"
 directory_blacklist = []
 
 [parse]
