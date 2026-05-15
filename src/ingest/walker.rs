@@ -1,10 +1,6 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    time::SystemTime,
-};
-
 use crate::config::Config;
+use std::{path::PathBuf, time::SystemTime};
+use walkdir::WalkDir;
 
 #[derive(Debug)]
 pub struct VaultFile {
@@ -14,52 +10,34 @@ pub struct VaultFile {
 
 pub fn walk_vault(conf: Config) -> Vec<VaultFile> {
     let vault_path = PathBuf::from(&conf.vault.path);
+    let blacklist = &conf.vault.directory_blacklist;
 
-    match vault_path.try_exists() {
-        Ok(true) => {}
-        Ok(false) => panic!("Path does not exist: {}", vault_path.display()),
-        Err(error) => panic!("Error accessing path: {error}"),
+    if !vault_path.exists() {
+        panic!("Path does not exist: {}", vault_path.display());
     }
 
-    walk_dir(vault_path)
-}
-
-fn walk_dir(path: impl AsRef<Path>) -> Vec<VaultFile> {
-    let mut vault_files: Vec<VaultFile> = Vec::new();
-
-    let contents = match fs::read_dir(path) {
-        Ok(rd) => rd,
-        Err(_) => return vault_files,
-    };
-
-    for entry in contents {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        let file_type = match entry.file_type() {
-            Ok(ft) => ft,
-            Err(_) => continue,
-        };
-
-        if file_type.is_dir() {
-            vault_files.extend(walk_dir(entry.path()));
-        } else {
-            let metadata = match entry.metadata() {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
-            let modified = match metadata.modified() {
-                Ok(mtime) => mtime,
-                Err(_) => continue,
-            };
-            vault_files.push(VaultFile {
-                path: entry.path().to_string_lossy().to_string(),
-                mtime: modified,
-            });
-        }
-    }
-
-    vault_files
+    WalkDir::new(&vault_path)
+        .into_iter()
+        .filter_entry(|e| {
+            // Skip blacklisted dirs
+            if e.file_type().is_dir() {
+                let relative = e
+                    .path()
+                    .strip_prefix(&vault_path)
+                    .unwrap()
+                    .to_string_lossy();
+                return !blacklist.contains(&relative.to_string());
+            }
+            true
+        })
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| {
+            let mtime = e.metadata().ok()?.modified().ok()?;
+            Some(VaultFile {
+                path: e.path().to_string_lossy().to_string(),
+                mtime,
+            })
+        })
+        .collect()
 }

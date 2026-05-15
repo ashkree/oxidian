@@ -1,6 +1,6 @@
 [vault]
 path = "tests/fixtures/sample_vault"
-directory_blacklist = []
+directory_blacklist = ["blacklisted_dir"]
 
 [parse]
 frontmatter_blacklist = ["secret"]
